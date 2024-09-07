@@ -2,9 +2,10 @@ import requests
 import os
 import json
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 import argparse
 import logging
+import time
 
 # Load the environment variables
 load_dotenv()
@@ -20,7 +21,7 @@ PIXELFED_API_URL = f"https://{PIXELFED_INSTANCE}/api/v1"
 # Instagram API URL
 INSTAGRAM_GRAPH_API_URL = f"https://graph.facebook.com/v16.0/{INSTAGRAM_PAGE_ID}/media"
 
-# File to store posted Pixelfed post IDs
+# File to store posted Pixelfed post IDs and timestamps
 POSTED_LOG_FILE = "logs/posted.json"
 
 # Logging setup: File and Console
@@ -31,14 +32,14 @@ logging.basicConfig(level=logging.INFO,
                         logging.StreamHandler()                     # Log to console
                     ])
 
-# Helper function to load already posted IDs
+# Helper function to load already posted IDs and timestamps
 def load_posted_ids():
     if os.path.exists(POSTED_LOG_FILE):
         with open(POSTED_LOG_FILE, 'r') as file:
             return json.load(file)
     return []
 
-# Helper function to save posted IDs
+# Helper function to save posted IDs and timestamps
 def save_posted_ids(posted_ids):
     with open(POSTED_LOG_FILE, 'w') as file:
         json.dump(posted_ids, file)
@@ -81,6 +82,18 @@ def post_to_instagram(image_url, caption):
         logging.error(f"Error posting to Instagram: {response.status_code}")
         return False
 
+# Throttle function to ensure max 10 posts per hour
+def throttle_posting(posted_ids):
+    now = datetime.now()
+    # Filter posts from the last hour
+    last_hour_posts = [post for post in posted_ids if datetime.strptime(post['timestamp'], "%Y-%m-%dT%H:%M:%S") > now - timedelta(hours=1)]
+    
+    if len(last_hour_posts) >= 10:
+        logging.info("Posting limit reached. Waiting for 1 hour.")
+        # Wait for the next available post slot
+        time_to_wait = 3600 - (now - datetime.strptime(last_hour_posts[0]['timestamp'], "%Y-%m-%dT%H:%M:%S")).seconds
+        time.sleep(time_to_wait)
+
 # Helper function to parse date and datetime in ISO 8601 format
 def parse_iso_datetime(date_str):
     try:
@@ -119,14 +132,20 @@ if __name__ == "__main__":
         post_id = post['id']
         
         # Skip already posted posts
-        if post_id in posted_ids:
+        if post_id in [p['id'] for p in posted_ids]:
             logging.info(f"Post {post_id} already posted, skipping.")
             continue
+        
+        # Throttle posting to ensure no more than 10 posts per hour
+        throttle_posting(posted_ids)
         
         image_url = post['media'][0]['url']  # Take the first image of the post
         caption = post['caption'] if 'caption' in post else ''
         
         if post_to_instagram(image_url, caption):
-            posted_ids.append(post_id)
+            posted_ids.append({
+                'id': post_id,
+                'timestamp': datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            })
             save_posted_ids(posted_ids)  # Save the updated list of posted IDs
             logging.info(f"Post {post_id} successfully posted and logged.")
