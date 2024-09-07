@@ -88,20 +88,50 @@ def get_all_pixelfed_posts(start_date, end_date):
     
     return all_posts
 
-# Function to post an entry to Instagram
-def post_to_instagram(image_url, caption):
-    data = {
-        "image_url": image_url,
-        "caption": caption,
-        "access_token": INSTAGRAM_ACCESS_TOKEN
-    }
-    response = requests.post(INSTAGRAM_GRAPH_API_URL, data=data)
+# Function to post a gallery or single entry to Instagram
+def post_to_instagram(media_urls, caption):
+    # Step 1: Upload each image
+    instagram_media_ids = []
+    for media_url in media_urls:
+        data = {
+            "image_url": media_url,
+            "access_token": INSTAGRAM_ACCESS_TOKEN
+        }
+        response = requests.post(f"{INSTAGRAM_GRAPH_API_URL}/media", data=data)
+        
+        if response.status_code == 200:
+            media_id = response.json().get("id")
+            instagram_media_ids.append(media_id)
+            logging.info(f"Image uploaded successfully. Media ID: {media_id}")
+        else:
+            logging.error(f"Error uploading image to Instagram: {response.status_code}")
+            return False
+    
+    # Step 2: Create the carousel (multi-image post)
+    if len(instagram_media_ids) > 1:
+        data = {
+            "media_type": "CAROUSEL",
+            "caption": caption,
+            "children": instagram_media_ids,
+            "access_token": INSTAGRAM_ACCESS_TOKEN
+        }
+    else:
+        # Single image post
+        data = {
+            "media_type": "IMAGE",
+            "caption": caption,
+            "access_token": INSTAGRAM_ACCESS_TOKEN,
+            "media_id": instagram_media_ids[0]
+        }
+    
+    # Finalize the post
+    response = requests.post(f"{INSTAGRAM_GRAPH_API_URL}/media_publish", data=data)
     
     if response.status_code == 200:
-        logging.info(f"Post successfully sent to Instagram.")
+        logging.info("Post successfully sent to Instagram.")
         return True
     else:
-        logging.error(f"Error posting to Instagram: {response.status_code}")
+        logging.error(f"Error publishing post to Instagram: {response.status_code}")
         return False
 
 # Throttle function to ensure max 10 posts per hour
@@ -159,7 +189,7 @@ if __name__ == "__main__":
     # Post each entry to Instagram
     for post in pixelfed_posts:
         post_id = post['id']
-        
+
         # Skip already posted posts
         if post_id in [p['id'] for p in posted_ids]:
             logging.info(f"Post {post_id} already posted, skipping.")
@@ -167,12 +197,14 @@ if __name__ == "__main__":
         
         # Throttle posting to ensure no more than 10 posts per hour
         throttle_posting(posted_ids)
-        print(post)
-        image_url = post['media'][0]['url']  # Take the first image of the post
+
+        # Retrieve media URLs for the post (multiple images for a gallery)
+        media_urls = [media['url'] for media in post.get('media_attachments', [])]
+
         caption = post['caption'] if 'caption' in post else ''
-        
-        logging.info(f"Posting Pixelfed post {post_id} to Instagram.")
-        if post_to_instagram(image_url, caption):
+
+        logging.info(f"Posting Pixelfed post {post_id} to Instagram as a gallery.")
+        if post_to_instagram(media_urls, caption):
             posted_ids.append({
                 'id': post_id,
                 'timestamp': datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
