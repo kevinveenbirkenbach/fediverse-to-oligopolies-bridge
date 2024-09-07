@@ -60,6 +60,11 @@ def get_pixelfed_posts(start_date, end_date):
         
         return filtered_posts
     if response.status_code == 404:
+        instance_api_overview = f"{PIXELFED_API_URL}/instance"
+        if requests.get(instance_api_overview).status_code == 200:
+            logging.info(f"Instance is reachable. URL: {url}")
+        else:
+            logging.info(f"Instance is NOT reachable. URL: {url}")
         logging.error(f"Post endpoint not found. Possible issues: incorrect endpoint or user not found. URL: {url}")
     elif response.status_code == 401:
         logging.error(f"Unauthorized. Check if your access token is valid and the API permissions are correct.")
