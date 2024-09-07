@@ -39,7 +39,7 @@ def save_posted_ids(posted_ids):
 
 # Function to retrieve Pixelfed posts between two timestamps
 def get_pixelfed_posts(start_date, end_date):
-    url = f"{PIXELFED_API_URL}/accounts/{PIXELFED_USERNAME}/posts"
+    url = f"{PIXELFED_API_URL}/accounts/{PIXELFED_USERNAME}/statuses"
     headers = {
         "Authorization": f"Bearer {PIXELFED_ACCESS_TOKEN}"
     }
