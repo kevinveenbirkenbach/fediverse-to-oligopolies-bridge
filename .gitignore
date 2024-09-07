@@ -1,3 +1,2 @@
 .env
-logs/*.json
-logs/*.log
+posted.logs.json

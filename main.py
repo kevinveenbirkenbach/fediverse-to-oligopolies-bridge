@@ -23,15 +23,7 @@ PIXELFED_API_URL = f"https://{PIXELFED_INSTANCE}/api/v1"
 INSTAGRAM_GRAPH_API_URL = f"https://graph.facebook.com/v16.0/{INSTAGRAM_PAGE_ID}/media"
 
 # File to store posted Pixelfed post IDs and timestamps
-POSTED_LOG_FILE = "logs/posted.json"
-
-# Logging setup: File and Console
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s',
-                    handlers=[
-                        logging.FileHandler("logs/logging.log"),    # Log to file
-                        logging.StreamHandler()                     # Log to console
-                    ])
+POSTED_LOG_FILE = "posted.logs.json"
 
 # Helper function to load already posted IDs and timestamps
 def load_posted_ids():
@@ -54,13 +46,17 @@ def get_pixelfed_posts(start_date, end_date):
     response = requests.get(url, headers=headers)
     
     if response.status_code == 200:
+        logging.debug(f"Retrieved posts from Pixelfed API.")
         posts = response.json()
         filtered_posts = []
         
         for post in posts['data']:
             post_date = datetime.strptime(post['created_at'], "%Y-%m-%dT%H:%M:%S.%fZ")
             if start_date <= post_date <= end_date:
+                logging.debug(f"Post {post['id']} is within the date range.")
                 filtered_posts.append(post)
+            else:
+                logging.debug(f"Post {post['id']} is outside the date range.")
         
         return filtered_posts
     else:
@@ -77,7 +73,7 @@ def post_to_instagram(image_url, caption):
     response = requests.post(INSTAGRAM_GRAPH_API_URL, data=data)
     
     if response.status_code == 200:
-        logging.info("Successfully posted to Instagram.")
+        logging.info(f"Post successfully sent to Instagram.")
         return True
     else:
         logging.error(f"Error posting to Instagram: {response.status_code}")
@@ -93,6 +89,7 @@ def throttle_posting(posted_ids):
         logging.info("Posting limit reached. Waiting for 1 hour.")
         # Wait for the next available post slot
         time_to_wait = 3600 - (now - datetime.strptime(last_hour_posts[0]['timestamp'], "%Y-%m-%dT%H:%M:%S")).seconds
+        logging.debug(f"Sleeping for {time_to_wait} seconds.")
         time.sleep(time_to_wait)
 
 # Helper function to parse date and datetime in ISO 8601 format
@@ -113,9 +110,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sync Pixelfed posts to Instagram.")
     parser.add_argument("start_date", type=parse_iso_datetime, help="Start date (ISO 8601: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)")
     parser.add_argument("end_date", type=parse_iso_datetime, help="End date (ISO 8601: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)")
+    parser.add_argument("--verbose", action="store_true", help="Enable detailed logging output")
 
     # Parse arguments
     args = parser.parse_args()
+
+    # Set logging level based on verbose argument
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
     start_date = args.start_date
     end_date = args.end_date
 
@@ -123,6 +128,7 @@ if __name__ == "__main__":
     posted_ids = load_posted_ids()
 
     # Retrieve Pixelfed posts
+    logging.info(f"Retrieving posts from Pixelfed between {start_date} and {end_date}.")
     pixelfed_posts = get_pixelfed_posts(start_date, end_date)
     
     # Post each entry to Instagram
@@ -140,6 +146,7 @@ if __name__ == "__main__":
         image_url = post['media'][0]['url']  # Take the first image of the post
         caption = post['caption'] if 'caption' in post else ''
         
+        logging.info(f"Posting Pixelfed post {post_id} to Instagram.")
         if post_to_instagram(image_url, caption):
             posted_ids.append({
                 'id': post_id,
