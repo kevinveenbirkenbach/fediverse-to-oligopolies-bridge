@@ -12,6 +12,7 @@ load_dotenv()
 
 PIXELFED_ACCESS_TOKEN = os.getenv("PIXELFED_ACCESS_TOKEN")
 PIXELFED_INSTANCE = os.getenv("PIXELFED_INSTANCE")
+PIXELFED_USERNAME = os.getenv("PIXELFED_USERNAME")
 INSTAGRAM_ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN")
 INSTAGRAM_PAGE_ID = os.getenv("INSTAGRAM_PAGE_ID")
 
@@ -45,8 +46,8 @@ def save_posted_ids(posted_ids):
         json.dump(posted_ids, file)
 
 # Function to retrieve Pixelfed posts between two timestamps
-def get_pixelfed_posts(username, start_date, end_date):
-    url = f"{PIXELFED_API_URL}/accounts/{username}/posts"
+def get_pixelfed_posts(start_date, end_date):
+    url = f"{PIXELFED_API_URL}/accounts/{PIXELFED_USERNAME}/posts"
     headers = {
         "Authorization": f"Bearer {PIXELFED_ACCESS_TOKEN}"
     }
@@ -110,14 +111,11 @@ def parse_iso_datetime(date_str):
 if __name__ == "__main__":
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Sync Pixelfed posts to Instagram.")
-    parser.add_argument("username", type=str, help="Pixelfed username")
     parser.add_argument("start_date", type=parse_iso_datetime, help="Start date (ISO 8601: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)")
     parser.add_argument("end_date", type=parse_iso_datetime, help="End date (ISO 8601: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)")
 
     # Parse arguments
     args = parser.parse_args()
-
-    username = args.username
     start_date = args.start_date
     end_date = args.end_date
 
@@ -125,7 +123,7 @@ if __name__ == "__main__":
     posted_ids = load_posted_ids()
 
     # Retrieve Pixelfed posts
-    pixelfed_posts = get_pixelfed_posts(username, start_date, end_date)
+    pixelfed_posts = get_pixelfed_posts(start_date, end_date)
     
     # Post each entry to Instagram
     for post in pixelfed_posts:

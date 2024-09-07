@@ -1,4 +1,5 @@
 PIXELFED_ACCESS_TOKEN=dein_pixelfed_access_token
 PIXELFED_INSTANCE=your_pixelfed.instance
+PIXELFED_USERNAME=your_pixelfed_username
 INSTAGRAM_ACCESS_TOKEN=dein_instagram_access_token
 INSTAGRAM_PAGE_ID=deine_instagram_page_id
