@@ -1,8 +1,10 @@
 import requests
 import os
+import json
 from dotenv import load_dotenv
 from datetime import datetime
 import argparse
+import logging
 
 # Load the environment variables
 load_dotenv()
@@ -17,6 +19,29 @@ PIXELFED_API_URL = f"https://{PIXELFED_INSTANCE}/api/v1"
 
 # Instagram API URL
 INSTAGRAM_GRAPH_API_URL = f"https://graph.facebook.com/v16.0/{INSTAGRAM_PAGE_ID}/media"
+
+# File to store posted Pixelfed post IDs
+POSTED_LOG_FILE = "logs/posted.json"
+
+# Logging setup: File and Console
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    handlers=[
+                        logging.FileHandler("logs/logging.log"),    # Log to file
+                        logging.StreamHandler()                     # Log to console
+                    ])
+
+# Helper function to load already posted IDs
+def load_posted_ids():
+    if os.path.exists(POSTED_LOG_FILE):
+        with open(POSTED_LOG_FILE, 'r') as file:
+            return json.load(file)
+    return []
+
+# Helper function to save posted IDs
+def save_posted_ids(posted_ids):
+    with open(POSTED_LOG_FILE, 'w') as file:
+        json.dump(posted_ids, file)
 
 # Function to retrieve Pixelfed posts between two timestamps
 def get_pixelfed_posts(username, start_date, end_date):
@@ -37,7 +62,7 @@ def get_pixelfed_posts(username, start_date, end_date):
         
         return filtered_posts
     else:
-        print(f"Error retrieving Pixelfed posts: {response.status_code}")
+        logging.error(f"Error retrieving Pixelfed posts: {response.status_code}")
         return []
 
 # Function to post an entry to Instagram
@@ -50,9 +75,11 @@ def post_to_instagram(image_url, caption):
     response = requests.post(INSTAGRAM_GRAPH_API_URL, data=data)
     
     if response.status_code == 200:
-        print("Successfully posted to Instagram.")
+        logging.info("Successfully posted to Instagram.")
+        return True
     else:
-        print(f"Error posting to Instagram: {response.status_code}")
+        logging.error(f"Error posting to Instagram: {response.status_code}")
+        return False
 
 # Helper function to parse date and datetime in ISO 8601 format
 def parse_iso_datetime(date_str):
@@ -81,12 +108,25 @@ if __name__ == "__main__":
     start_date = args.start_date
     end_date = args.end_date
 
+    # Load already posted IDs
+    posted_ids = load_posted_ids()
+
     # Retrieve Pixelfed posts
     pixelfed_posts = get_pixelfed_posts(username, start_date, end_date)
     
     # Post each entry to Instagram
     for post in pixelfed_posts:
+        post_id = post['id']
+        
+        # Skip already posted posts
+        if post_id in posted_ids:
+            logging.info(f"Post {post_id} already posted, skipping.")
+            continue
+        
         image_url = post['media'][0]['url']  # Take the first image of the post
         caption = post['caption'] if 'caption' in post else ''
         
-        post_to_instagram(image_url, caption)
+        if post_to_instagram(image_url, caption):
+            posted_ids.append(post_id)
+            save_posted_ids(posted_ids)  # Save the updated list of posted IDs
+            logging.info(f"Post {post_id} successfully posted and logged.")
