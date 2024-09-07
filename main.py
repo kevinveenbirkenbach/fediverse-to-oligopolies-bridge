@@ -59,6 +59,10 @@ def get_pixelfed_posts(start_date, end_date):
                 logging.debug(f"Post {post['id']} is outside the date range.")
         
         return filtered_posts
+    if response.status_code == 404:
+        logging.error(f"Post endpoint not found. Possible issues: incorrect endpoint or user not found. URL: {url}")
+    elif response.status_code == 401:
+        logging.error(f"Unauthorized. Check if your access token is valid and the API permissions are correct.")
     else:
         logging.error(f"Error retrieving Pixelfed posts: {response.status_code}")
         return []
