@@ -37,8 +37,6 @@ def save_posted_ids(posted_ids):
     with open(POSTED_LOG_FILE, 'w') as file:
         json.dump(posted_ids, file)
 
-
-# Function to retrieve Pixelfed posts between two timestamps
 # Function to retrieve all Pixelfed posts between two timestamps with pagination
 def get_all_pixelfed_posts(start_date, end_date):
     url = f"{PIXELFED_API_URL}/accounts/{PIXELFED_USERNAME}/statuses"
@@ -59,18 +57,22 @@ def get_all_pixelfed_posts(start_date, end_date):
             data = response.json()
             
             if not data:
-                # No more posts to retrieve
+                logging.debug(f"No more posts to retrieve")
                 break
 
             for post in data:
                 post_date = datetime.strptime(post['created_at'], "%Y-%m-%dT%H:%M:%S.%fZ")
                 
                 if start_date <= post_date <= end_date:
-                    logging.debug(f"Post {post['id']} is within the date range.")
+                    logging.debug(f"Post {post['id']} created on {post['created_at']} is within the date range.")
                     all_posts.append(post)
                 else:
                     logging.debug(f"Post {post['id']} created on {post['created_at']} is outside the date range.")
-            
+
+            if datetime.strptime(data[-1]['created_at'], "%Y-%m-%dT%H:%M:%S.%fZ") < start_date:
+                logging.debug(f"All posts until {start_date} loaded.")
+                break
+
             # Paginate by using the ID of the last post in the current batch
             params['max_id'] = data[-1]['id']
         
@@ -165,7 +167,7 @@ if __name__ == "__main__":
         
         # Throttle posting to ensure no more than 10 posts per hour
         throttle_posting(posted_ids)
-        
+        print(post)
         image_url = post['media'][0]['url']  # Take the first image of the post
         caption = post['caption'] if 'caption' in post else ''
         
