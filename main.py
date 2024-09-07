@@ -37,6 +37,7 @@ def save_posted_ids(posted_ids):
     with open(POSTED_LOG_FILE, 'w') as file:
         json.dump(posted_ids, file)
 
+
 # Function to retrieve Pixelfed posts between two timestamps
 def get_pixelfed_posts(start_date, end_date):
     url = f"{PIXELFED_API_URL}/accounts/{PIXELFED_USERNAME}/statuses"
@@ -49,14 +50,13 @@ def get_pixelfed_posts(start_date, end_date):
         logging.debug(f"Retrieved posts from Pixelfed API.")
         posts = response.json()
         filtered_posts = []
-        
-        for post in posts['data']:
+        for post in posts:
             post_date = datetime.strptime(post['created_at'], "%Y-%m-%dT%H:%M:%S.%fZ")
             if start_date <= post_date <= end_date:
                 logging.debug(f"Post {post['id']} is within the date range.")
                 filtered_posts.append(post)
             else:
-                logging.debug(f"Post {post['id']} is outside the date range.")
+                logging.debug(f"Post {post['id']} created on {post['created_at']} is outside the date range.")
         
         return filtered_posts
     if response.status_code == 404:
