@@ -65,7 +65,7 @@ def get_pixelfed_posts(start_date, end_date):
         logging.error(f"Unauthorized. Check if your access token is valid and the API permissions are correct.")
     else:
         logging.error(f"Error retrieving Pixelfed posts: {response.status_code}")
-        return []
+    return []
 
 # Function to post an entry to Instagram
 def post_to_instagram(image_url, caption):
