@@ -90,22 +90,22 @@ def get_all_pixelfed_posts(start_date, end_date):
 
 # Function to post a gallery or single entry to Instagram
 def post_to_instagram(media_urls, caption):
-    # Step 1: Upload each image
     instagram_media_ids = []
     for media_url in media_urls:
         data = {
             "image_url": media_url,
             "access_token": INSTAGRAM_ACCESS_TOKEN
         }
-        response = requests.post(f"{INSTAGRAM_GRAPH_API_URL}/media", data=data)
+        response = requests.post(f"{INSTAGRAM_GRAPH_API_URL}", data=data)
         
         if response.status_code == 200:
             media_id = response.json().get("id")
             instagram_media_ids.append(media_id)
             logging.info(f"Image uploaded successfully. Media ID: {media_id}")
         else:
-            logging.error(f"Error uploading image to Instagram: {response.status_code}")
+            logging.error(f"Error uploading image to Instagram: {response.status_code}, Response: {response.text}")
             return False
+    
     
     # Step 2: Create the carousel (multi-image post)
     if len(instagram_media_ids) > 1:
