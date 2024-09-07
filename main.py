@@ -8,11 +8,12 @@ import argparse
 load_dotenv()
 
 PIXELFED_ACCESS_TOKEN = os.getenv("PIXELFED_ACCESS_TOKEN")
+PIXELFED_INSTANCE = os.getenv("PIXELFED_INSTANCE")
 INSTAGRAM_ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN")
 INSTAGRAM_PAGE_ID = os.getenv("INSTAGRAM_PAGE_ID")
 
 # Pixelfed API URL
-PIXELFED_API_URL = "https://pixelfed.instance/api/v1"  # Adjust the instance URL
+PIXELFED_API_URL = f"https://{PIXELFED_INSTANCE}/api/v1"
 
 # Instagram API URL
 INSTAGRAM_GRAPH_API_URL = f"https://graph.facebook.com/v16.0/{INSTAGRAM_PAGE_ID}/media"
