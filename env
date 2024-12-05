@@ -3,3 +3,4 @@ PIXELFED_INSTANCE=your_pixelfed.instance
 PIXELFED_USERNAME=your_pixelfed_username
 INSTAGRAM_ACCESS_TOKEN=dein_instagram_access_token
 INSTAGRAM_PAGE_ID=deine_instagram_page_id
+APP_ID=deine_app_id

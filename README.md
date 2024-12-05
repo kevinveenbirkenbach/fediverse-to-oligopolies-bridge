@@ -28,10 +28,23 @@ This project is a **bridge tool** designed to synchronize and automate the posti
     ```
 
 ## Requirements
+### Technical Requirements
 - Python 3.x
 - OAuth API tokens for all platforms involved.
 - Federated social media accounts (Pixelfed, Mastodon, PeerTube, etc.).
 - Centralized accounts (Instagram Business/Creator Account, X, YouTube).
+### Token Requirements 
+- https://developers.facebook.com/apps/1572282100376225/instagram-business/API-Setup/
+- Generate long time token curl -X GET "https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=<APP_ID>&client_secret=<APP_SECRET>&fb_exchange_token=<SHORT_LIVED_TOKEN>"
+
+
+## Development
+- https://graph.facebook.com/debug_token?input_token={dein_access_token}&access_token={dein_app_access_token}
+- curl -X GET "https://graph.facebook.com/debug_token?input_token=<DEIN_TOKEN>&access_token=<APP_ACCESS_TOKEN>"
+- https://www.getphyllo.com/post/how-to-use-instagram-api-to-post-photos-on-instagram
+- https://developers.facebook.com/tools/debug/accesstoken/
+- https://developers.facebook.com/tools/explorer/
+
 
 ## Author
 

@@ -20,7 +20,7 @@ INSTAGRAM_PAGE_ID = os.getenv("INSTAGRAM_PAGE_ID")
 PIXELFED_API_URL = f"https://{PIXELFED_INSTANCE}/api/v1"
 
 # Instagram API URL
-INSTAGRAM_GRAPH_API_URL = f"https://graph.facebook.com/v16.0/{INSTAGRAM_PAGE_ID}/media"
+INSTAGRAM_GRAPH_API_URL = f"https://graph.facebook.com/v21.0/{INSTAGRAM_PAGE_ID}/media"
 
 # File to store posted Pixelfed post IDs and timestamps
 POSTED_LOG_FILE = "posted.logs.json"
@@ -103,7 +103,7 @@ def post_to_instagram(media_urls, caption):
             instagram_media_ids.append(media_id)
             logging.info(f"Image uploaded successfully. Media ID: {media_id}")
         else:
-            logging.error(f"Error uploading image to Instagram: {response.status_code}, Response: {response.text}")
+            logging.error(f"Error uploading image to Instagram.\nREQUEST:\n - URL:{INSTAGRAM_GRAPH_API_URL}\n - DATA:{data}\nResponse:\n - STATUS_CODE: {response.status_code}\n - TEXT: {response.text}")
             return False
     
     
@@ -186,6 +186,7 @@ if __name__ == "__main__":
     logging.info(f"Retrieving posts from Pixelfed between {start_date} and {end_date}.")
     pixelfed_posts = get_all_pixelfed_posts(start_date, end_date)
     
+    logging.debug(f"Access Token: {INSTAGRAM_ACCESS_TOKEN}")
     # Post each entry to Instagram
     for post in pixelfed_posts:
         post_id = post['id']
