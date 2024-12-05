@@ -50,23 +50,35 @@ class Instagram:
             exit(1)
 
     def get_instagram_business_account(self):
-        """Fetch the Instagram Business Account ID associated with the page."""
+        """Fetch the Instagram Business Account ID associated with the Facebook page."""
         logging.info("Fetching Instagram Business Account ID...")
         url = f"https://graph.facebook.com/v21.0/me/accounts?access_token={self.access_token}"
-        response = requests.get(url)
-        if response.status_code == 200:
-            accounts = response.json().get("data", [])
-            for account in accounts:
-                if "instagram_business_account" in account:
-                    business_account_id = account["instagram_business_account"]["id"]
-                    logging.info(f"Found Instagram Business Account ID: {business_account_id}")
-                    return business_account_id
-            logging.error("No Instagram Business Account linked to this token.")
-            exit(1)
-        else:
-            logging.error(f"Failed to fetch accounts. Status code: {response.status_code}, Response: {response.text}")
-            exit(1)
-        return None
+        
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                accounts = response.json().get("data", [])
+                if not accounts:
+                    logging.error("No Facebook pages found for this access token. Ensure the token has 'pages_show_list' permission.")
+                    exit(1)
+                
+                for account in accounts:
+                    page_name = account.get("name", "Unknown Page")
+                    instagram_account = account.get("instagram_business_account")
+                    if instagram_account and "id" in instagram_account:
+                        business_account_id = instagram_account["id"]
+                        logging.info(f"Found Instagram Business Account for page '{page_name}': {business_account_id}")
+                        return business_account_id
+
+                logging.error("No Instagram Business Account linked to any of the Facebook pages. Check page settings.")
+            else:
+                logging.error(f"Failed to fetch accounts. Status code: {response.status_code}, Response: {response.text}")
+            
+        except requests.RequestException as e:
+            logging.error(f"Request to fetch Instagram Business Account ID failed: {e}")
+
+        exit(1)  # Exit if no valid account was found
+
 
     def upload_media(self, media_urls, caption):
         """Upload media to Instagram."""
