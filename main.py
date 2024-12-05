@@ -24,14 +24,7 @@ if __name__ == "__main__":
     logging.info("Initializing Pixelfed and Instagram clients...")
     pixelfed = Pixelfed()
     instagram = Instagram()
-
-    logging.info("Validating Instagram access token...")
-    instagram.validate_access_token()
     
-    logging.info("Checking permissions...")
-    instagram.check_permissions()
-
-
     logging.info(f"Loading posted IDs from file: {POSTED_LOG_FILE}")
     posted_ids = load_posted_ids(POSTED_LOG_FILE)
 
