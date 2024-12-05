@@ -37,6 +37,46 @@ def save_posted_ids(posted_ids):
     with open(POSTED_LOG_FILE, 'w') as file:
         json.dump(posted_ids, file)
 
+# Debugging function
+def debug_api_request(url, headers=None, params=None, data=None, method="GET"):
+    """
+    Debug an API request by logging the details and the response.
+    """
+    if not logging.getLogger().isEnabledFor(logging.DEBUG):
+        return  # Only run if verbose is enabled
+
+    logging.debug("=== API Debugging ===")
+    logging.debug(f"Method: {method}")
+    logging.debug(f"URL: {url}")
+    if headers:
+        logging.debug(f"Headers: {headers}")
+    if params:
+        logging.debug(f"Parameters: {json.dumps(params, indent=2)}")
+    if data:
+        logging.debug(f"Data: {json.dumps(data, indent=2)}")
+
+    # Make the request and log the response
+    try:
+        if method.upper() == "GET":
+            response = requests.get(url, headers=headers, params=params)
+        elif method.upper() == "POST":
+            response = requests.post(url, headers=headers, data=data)
+        else:
+            logging.error(f"Unsupported method: {method}")
+            return None
+
+        logging.debug(f"Response Status Code: {response.status_code}")
+        try:
+            logging.debug(f"Response JSON: {json.dumps(response.json(), indent=2)}")
+        except ValueError:
+            logging.debug(f"Response Text: {response.text}")
+
+        return response
+
+    except requests.RequestException as e:
+        logging.error(f"API request failed: {e}")
+        return None
+
 # Function to retrieve all Pixelfed posts between two timestamps with pagination
 def get_all_pixelfed_posts(start_date, end_date):
     url = f"{PIXELFED_API_URL}/accounts/{PIXELFED_USERNAME}/statuses"
@@ -51,6 +91,8 @@ def get_all_pixelfed_posts(start_date, end_date):
     all_posts = []
     
     while True:
+        # Debug the request
+        debug_api_request(url, headers=headers, params=params, method="GET")
         response = requests.get(url, headers=headers, params=params)
         
         if response.status_code == 200:
@@ -96,6 +138,8 @@ def post_to_instagram(media_urls, caption):
             "image_url": media_url,
             "access_token": INSTAGRAM_ACCESS_TOKEN
         }
+        # Debug the request
+        debug_api_request(INSTAGRAM_GRAPH_API_URL, data=data, method="POST")
         response = requests.post(f"{INSTAGRAM_GRAPH_API_URL}", data=data)
         
         if response.status_code == 200:
@@ -105,8 +149,7 @@ def post_to_instagram(media_urls, caption):
         else:
             logging.error(f"Error uploading image to Instagram.\nREQUEST:\n - URL:{INSTAGRAM_GRAPH_API_URL}\n - DATA:{data}\nResponse:\n - STATUS_CODE: {response.status_code}\n - TEXT: {response.text}")
             return False
-    
-    
+
     # Step 2: Create the carousel (multi-image post)
     if len(instagram_media_ids) > 1:
         data = {
@@ -123,6 +166,9 @@ def post_to_instagram(media_urls, caption):
             "access_token": INSTAGRAM_ACCESS_TOKEN,
             "media_id": instagram_media_ids[0]
         }
+    
+    # Debug the publish request
+    debug_api_request(f"{INSTAGRAM_GRAPH_API_URL}/media_publish", data=data, method="POST")
     
     # Finalize the post
     response = requests.post(f"{INSTAGRAM_GRAPH_API_URL}/media_publish", data=data)
