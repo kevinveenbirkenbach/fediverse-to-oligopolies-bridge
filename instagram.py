@@ -22,6 +22,20 @@ class Instagram:
             logging.error(f"Failed to validate access token. Status code: {response.status_code}")
             exit(1)
 
+    def check_permissions(self):
+        """Check all permissions for the current access token."""
+        logging.info("Checking permissions for the access token...")
+        permissions_url = f"https://graph.facebook.com/v21.0/me/permissions?access_token={self.access_token}"
+        response = requests.get(permissions_url)
+        if response.status_code == 200:
+            permissions = response.json().get("data", [])
+            valid_permissions = [perm['permission'] for perm in permissions if perm['status'] == 'granted']
+            denied_permissions = [perm['permission'] for perm in permissions if perm['status'] == 'declined']
+            logging.info(f"Granted permissions: {valid_permissions}")
+            logging.warning(f"Denied permissions: {denied_permissions}")
+        else:
+            logging.error(f"Failed to fetch permissions. Status code: {response.status_code}, Response: {response.text}")
+
     def upload_media(self, media_urls, caption):
         logging.info(f"Uploading {len(media_urls)} media items to Instagram...")
         media_ids = []
@@ -34,7 +48,7 @@ class Instagram:
                 media_ids.append(media_id)
                 logging.info(f"Successfully uploaded media. Media ID: {media_id}")
             else:
-                logging.error(f"Error uploading media. Status code: {response.status_code}, Response: {response.text}")
+                self.log_error_details(response)
                 return False
         logging.info("All media items uploaded successfully.")
         return self.publish_post(media_ids, caption)
@@ -62,5 +76,21 @@ class Instagram:
             logging.info("Post published successfully to Instagram.")
             return True
         else:
-            logging.error(f"Error publishing post. Status code: {response.status_code}, Response: {response.text}")
+            self.log_error_details(response)
             return False
+
+    def log_error_details(self, response):
+        """Log detailed error information from the API response."""
+        try:
+            error_details = response.json().get("error", {})
+            message = error_details.get("message", "No message provided")
+            error_type = error_details.get("type", "No type provided")
+            code = error_details.get("code", "No code provided")
+            subcode = error_details.get("error_subcode", "No subcode provided")
+            fbtrace_id = error_details.get("fbtrace_id", "No fbtrace_id provided")
+
+            logging.error(f"Error Details: Message: {message}, Type: {error_type}, "
+                          f"Code: {code}, Subcode: {subcode}, FBTrace ID: {fbtrace_id}")
+        except Exception as e:
+            logging.error(f"Failed to parse error details: {e}")
+            logging.debug(f"Raw response: {response.text}")
