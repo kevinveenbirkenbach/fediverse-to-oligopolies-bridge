@@ -1,3 +1,4 @@
 .env
 posted.logs.json
 __pycache__
+config/*

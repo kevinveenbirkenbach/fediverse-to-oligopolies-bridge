@@ -2,9 +2,13 @@ import argparse
 import logging
 from datetime import datetime
 from pixelfed import Pixelfed
-from instagram import Instagram
+from instagram_bot import Instagram
 from utils import load_posted_ids, save_posted_ids, throttle_posting
 from config import POSTED_LOG_FILE
+from yourls_client import YourlsClient
+from config import YOURLS_API_URL, YOURLS_API_SIGNATURE
+from getpass import getpass
+
 
 def parse_iso_datetime(date_str):
     try:
@@ -21,10 +25,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
 
-    logging.info("Initializing Pixelfed and Instagram clients...")
+    logging.info("Initializing Pixelfed, Instagram, and YOURLS clients...")
     pixelfed = Pixelfed()
     instagram = Instagram()
-    
+    yourls = YourlsClient(api_url=YOURLS_API_URL, signature=YOURLS_API_SIGNATURE)
+
     logging.info(f"Loading posted IDs from file: {POSTED_LOG_FILE}")
     posted_ids = load_posted_ids(POSTED_LOG_FILE)
 
@@ -42,6 +47,12 @@ if __name__ == "__main__":
 
         media_urls = [media['url'] for media in post.get('media_attachments', [])]
         caption = post.get('caption', '')
+
+        # Shorten the post URL using YOURLS
+        long_url = post.get('url', '')
+        short_url = yourls.shorten_url(long_url) if long_url else ''
+        if short_url:
+            caption += f" - Original Source: {short_url}"
 
         logging.info(f"Uploading media for post {post['id']} to Instagram.")
         if instagram.upload_media(media_urls, caption):
