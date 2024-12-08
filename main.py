@@ -8,6 +8,7 @@ from config import POSTED_LOG_FILE
 from yourls_client import YourlsClient
 from config import YOURLS_API_URL, YOURLS_API_SIGNATURE
 from getpass import getpass
+from config import POSTED_LOG_FILE
 
 
 def parse_iso_datetime(date_str):
@@ -32,6 +33,24 @@ if __name__ == "__main__":
 
     logging.info(f"Loading posted IDs from file: {POSTED_LOG_FILE}")
     posted_ids = load_posted_ids(POSTED_LOG_FILE)
+    
+    logging.info(f"Retrieving posts from Mastodon between {args.start_date} and {args.end_date}.")
+    posts = mastodon.get_posts(args.start_date, args.end_date)
+    logging.info(f"Retrieved {len(posts)} posts from Mastodon.")
+
+    for post in posts:
+        if post['id'] in [p['id'] for p in posted_ids]:
+            logging.info(f"Skipping post {post['id']} (already posted).")
+            continue
+
+        content = post.get('content', '')
+        logging.info(f"Posting Mastodon post {post['id']} to Twitter.")
+        if twitter.post_tweet(content):
+            posted_ids.append({'id': post['id'], 'timestamp': datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
+            save_posted_ids(POSTED_LOG_FILE, posted_ids)
+            logging.info(f"Updated posted IDs log with post {post['id']}.")
+
+    logging.info("All posts have been processed.")
 
     logging.info(f"Retrieving posts from Pixelfed between {args.start_date} and {args.end_date}.")
     posts = pixelfed.get_posts(args.start_date, args.end_date)
