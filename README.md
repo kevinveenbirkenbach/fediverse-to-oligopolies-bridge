@@ -1,4 +1,6 @@
 # Federated-to-Central Social Network Bridge
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-blue?logo=github)](https://github.com/sponsors/kevinveenbirkenbach) [![Patreon](https://img.shields.io/badge/Support-Patreon-orange?logo=patreon)](https://www.patreon.com/c/kevinveenbirkenbach) [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20Coffee-Funding-yellow?logo=buymeacoffee)](https://buymeacoffee.com/kevinveenbirkenbach) [![PayPal](https://img.shields.io/badge/Donate-PayPal-blue?logo=paypal)](https://s.veen.world/paypaldonate)
+
 
 This project is a **bridge tool** designed to synchronize and automate the posting of content from **federated social networks** (such as [Pixelfed](https://pixelfed.org/)) to **centralized social platforms** like Instagram, X (formerly Twitter), Facebook, and YouTube.
 
